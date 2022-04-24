@@ -1,78 +1,112 @@
 import { Component, OnInit } from '@angular/core';
-import { FlatTreeControl } from '@angular/cdk/tree';
+import { MatTableDataSource } from '@angular/material/table';
 import { ServiceService } from './service.service';
+import {animate, state, style, transition, trigger} from '@angular/animations';
 
-import {
-  MatTreeFlatDataSource,
-  MatTreeFlattener,
-} from '@angular/material/tree';
+
+interface DataNode {
+  
+  msgId:String;
+  operation:String;
+  type:String;
+  timestamp:String;
+  eventId:String;
+  category:String;
+  subCategory:String;
+  name: string;
+  startTime:String;
+  displayed:String;
+  suspended:String;
+  market:MarketNode[];
+}
+interface MarketNode {
+  msgId:String;
+  operation:String;
+  type:String;
+  timestamp:String;
+  name: string;
+  eventId:String;
+  marketId:String;
+  displayed:String;
+  suspended:String;
+  outcome:OutcomeNode[];
+}
+interface OutcomeNode {
+  msgId:String;
+  operation:String;
+  type:String;
+  timestamp:String;
+  name: string;
+  outcomeId:String;
+  marketId:String;
+  displayed:String;
+  suspended:String;
+  price:String;
+}
+
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.css'],
+  animations: [
+    trigger('detailExpand', [
+      state('collapsed', style({height: '0px', minHeight: '0'})),
+      state('expanded', style({height: '*'})),
+      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+    ]),
+  ],
 })
 export class AppComponent implements OnInit {
   title = 'sbg-tech-ui';
+  dataList = new MatTableDataSource();
+  displayedcolumnsList: string[] = [ 
+    'operation',
+    'type',
+    'category',
+    'subCategory',
+    'name',
+    'displayed',
+    'suspended','actions'];
+
 
   dbResponse:any = {};
-
   constructor(private service: ServiceService){
     this.service.getDataFromDb().subscribe((resp:any)=> {
       
       this.dbResponse = resp.response;
       console.log("resp", this.dbResponse);
-      this.dataSource.data = this.dbResponse;
-
-      console.log("this.datasource", this.dataSource.data);
-
+      this.dataList.data = this.dbResponse;
     })
-    //this.dataSource.data = this.dbResponse;
+    
   }
   ngOnInit(): void {
-    this.service.extractAndPushDataToKafka().subscribe({
-
-    })
-
-    
-    
+    this.service.extractAndPushDataToKafka().subscribe() 
   }
-  private _transformer = (node: DataNode, level: number) => {
-    return {
-      expandable: !!node.children && node.children.length > 0,
-      name: node.name,
-      level: level,
-    };
-  };
-
-  treeControl = new FlatTreeControl<TableNode>(
-    (node) => node.level,
-    (node) => node.expandable
-  );
-
-  treeFlattener = new MatTreeFlattener(
-    this._transformer,
-    (node) => node.level,
-    (node) => node.expandable,
-    (node) => node.children
-  );
-
-  dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
+  
+  isTableExpanded = false;
 
   
+    marketColList = [
+      'operation',
+      'type',
+      'name',
+      'displayed',
+      'suspended',
+      'mactions'];
 
-  hasChild = (_: number, node: TableNode) => node.expandable;
+      outColList = [
+        'operation',
+        'type',
+        'name',
+        'price',
+        'displayed',
+        'suspended'];
+    expandedElement: DataNode[]=[];
+  
+    
+}
 
-}
-interface DataNode {
-  name: string;
-  children?: DataNode[];
-}
-interface TableNode {
-  expandable: boolean;
-  name: string;
-  level: number;
-}
 
 
 
